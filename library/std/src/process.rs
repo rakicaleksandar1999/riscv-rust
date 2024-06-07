@@ -166,6 +166,7 @@ use crate::sys::process as imp;
 #[stable(feature = "command_access", since = "1.57.0")]
 pub use crate::sys_common::process::CommandEnvs;
 use crate::sys_common::{AsInner, AsInnerMut, FromInner, IntoInner};
+use crate::env;
 
 /// Representation of a running or exited child process.
 ///
@@ -627,7 +628,13 @@ impl Command {
     /// ```
     #[stable(feature = "process", since = "1.0.0")]
     pub fn new<S: AsRef<OsStr>>(program: S) -> Command {
-        Command { inner: imp::Command::new(program.as_ref()) }
+        if let Ok(runner) = env::var("TEST_SUITE_RUN_UNDER") {
+            let mut c = Command { inner: imp::Command::new(OsStr::new(&runner)) };
+            c.arg(program);
+            c
+        } else {
+            Command { inner: imp::Command::new(program.as_ref()) }
+        }
     }
 
     /// Adds an argument to pass to the program.
